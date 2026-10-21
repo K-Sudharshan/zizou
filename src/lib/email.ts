@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { Resend } from 'resend';
 import { Issue } from './schema';
 import { getConfig, formatDisplayDate } from './config';
@@ -70,6 +72,17 @@ export async function sendIssueEmail(params: {
 
   const subject = `Zizou: ${issue.headline} (${issue.editionDate})`;
 
+  // Read paper-plane logo for inline email pfp
+  let logoBuffer: Buffer | null = null;
+  try {
+    const logoPath = path.resolve(process.cwd(), 'public/apple-touch-icon.png');
+    if (fs.existsSync(logoPath)) {
+      logoBuffer = fs.readFileSync(logoPath);
+    }
+  } catch {
+    // optional fallback
+  }
+
   // Neat, concise Good Morning note with PDF attachment notice
   const html = `
     <!DOCTYPE html>
@@ -81,12 +94,23 @@ export async function sendIssueEmail(params: {
       <body style="margin: 0; padding: 24px 16px; background-color: #f3eee2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #101b33;">
         <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border: 1.5px solid #101b33; border-radius: 4px; padding: 32px 28px; box-shadow: 4px 4px 0 #101b33;">
           
-          <!-- Masthead & Date -->
-          <div style="border-bottom: 2px solid #101b33; padding-bottom: 12px; margin-bottom: 24px;">
+          <!-- Masthead & Date with PFP Avatar -->
+          <div style="border-bottom: 2px solid #101b33; padding-bottom: 14px; margin-bottom: 24px;">
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: #101b33; letter-spacing: -0.5px;">Zizou</td>
-                <td style="text-align: right; font-size: 12px; color: #4a5469; font-family: ui-monospace, Menlo, monospace;">${escapeHtml(displayDate)}</td>
+                <td style="vertical-align: middle;">
+                  <table style="border-collapse: collapse;">
+                    <tr>
+                      <td style="padding-right: 12px; vertical-align: middle;">
+                        <img src="cid:zizou-logo" alt="Zizou Logo" width="40" height="40" style="border-radius: 50%; border: 1.5px solid #101b33; display: block; box-shadow: 2px 2px 0 #101b33;" />
+                      </td>
+                      <td style="vertical-align: middle;">
+                        <span style="font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: #101b33; letter-spacing: -0.5px;">Zizou</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td style="text-align: right; font-size: 12px; color: #4a5469; font-family: ui-monospace, Menlo, monospace; vertical-align: middle;">${escapeHtml(displayDate)}</td>
               </tr>
             </table>
           </div>
@@ -153,6 +177,16 @@ export async function sendIssueEmail(params: {
           filename,
           content: pdfBuffer,
         },
+        ...(logoBuffer
+          ? [
+              {
+                filename: 'zizou-logo.png',
+                content: logoBuffer,
+                contentType: 'image/png',
+                inlineContentId: 'zizou-logo',
+              },
+            ]
+          : []),
       ],
       headers: {
         'Idempotency-Key': idempotencyKey,
