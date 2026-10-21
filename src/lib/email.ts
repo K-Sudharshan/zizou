@@ -70,47 +70,7 @@ export async function sendIssueEmail(params: {
 
   const subject = `Zizou: ${issue.headline} (${issue.editionDate})`;
 
-  // HTML content for email body
-  const storiesHtml = issue.stories
-    .map(
-      (s) => `
-      <div style="margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
-        <div style="font-size: 11px; font-weight: bold; color: #2563eb; text-transform: uppercase;">
-          ${escapeHtml(s.section)} &bull; ${escapeHtml(s.sourceName)}
-        </div>
-        <h3 style="margin: 4px 0 8px 0; font-size: 16px; color: #111827;">
-          ${escapeHtml(s.title)}
-        </h3>
-        <p style="margin: 0 0 6px 0; font-size: 14px; color: #374151; line-height: 1.5;">
-          <strong>What happened:</strong> ${escapeHtml(s.whatHappened)}
-        </p>
-        <p style="margin: 0 0 6px 0; font-size: 14px; color: #374151; line-height: 1.5;">
-          <strong>Why it matters:</strong> ${escapeHtml(s.whyItMatters)}
-        </p>
-        <p style="margin: 0 0 8px 0; font-size: 13px; color: #059669; line-height: 1.4;">
-          <strong>Next step:</strong> ${escapeHtml(s.nextStep)}
-        </p>
-        <a href="${escapeHtml(s.sourceUrl)}" style="font-size: 12px; color: #2563eb; text-decoration: underline;">
-          Read original source &rarr;
-        </a>
-      </div>
-    `
-    )
-    .join('');
-
-  const nextMovesHtml = issue.nextMoves
-    .map(
-      (m) => `
-      <li style="margin-bottom: 8px; font-size: 13px; color: #1f2937;">
-        <span style="font-weight: bold; color: ${m.isVerifiedOpportunity ? '#059669' : '#4b5563'};">
-          [${m.category.toUpperCase()}]
-        </span>
-        ${escapeHtml(m.action)}
-      </li>
-    `
-    )
-    .join('');
-
+  // Neat, concise Good Morning note with PDF attachment notice
   const html = `
     <!DOCTYPE html>
     <html>
@@ -118,52 +78,64 @@ export async function sendIssueEmail(params: {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 24px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-          <!-- Header -->
-          <div style="background-color: #111827; color: #ffffff; padding: 24px; text-align: center;">
-            <h1 style="margin: 0; font-size: 24px; letter-spacing: 2px;">ZIZOU</h1>
-            <p style="margin: 6px 0 0 0; font-size: 12px; color: #9ca3af; text-transform: uppercase;">
-              ${escapeHtml(displayDate)} &bull; 5-MINUTE TECH BRIEF
+      <body style="margin: 0; padding: 24px 16px; background-color: #f3eee2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #101b33;">
+        <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border: 1.5px solid #101b33; border-radius: 4px; padding: 32px 28px; box-shadow: 4px 4px 0 #101b33;">
+          
+          <!-- Masthead & Date -->
+          <div style="border-bottom: 2px solid #101b33; padding-bottom: 12px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: #101b33; letter-spacing: -0.5px;">Zizou</td>
+                <td style="text-align: right; font-size: 12px; color: #4a5469; font-family: ui-monospace, Menlo, monospace;">${escapeHtml(displayDate)}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Greeting -->
+          <h2 style="font-family: Georgia, serif; font-size: 21px; font-weight: 600; color: #101b33; margin: 0 0 12px 0;">
+            Good morning!
+          </h2>
+
+          <p style="font-size: 15px; line-height: 1.6; color: #4a5469; margin: 0 0 18px 0;">
+            Here is today’s 5-minute edition of <strong>Zizou</strong>. Your daily morning intelligence brief is ready.
+          </p>
+
+          <!-- Today's Lead Story Highlight -->
+          <div style="background-color: #f3eee2; border-left: 3.5px solid #1b3fd6; padding: 14px 16px; margin: 0 0 22px 0; border-radius: 2px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #1b3fd6; margin-bottom: 5px; letter-spacing: 0.5px;">
+              Today’s Lead Story
+            </div>
+            <div style="font-family: Georgia, serif; font-size: 16px; font-weight: 600; color: #101b33; line-height: 1.4;">
+              ${escapeHtml(issue.headline)}
+            </div>
+            <p style="font-size: 13.5px; line-height: 1.5; color: #4a5469; margin: 6px 0 0 0;">
+              ${escapeHtml(issue.summary)}
             </p>
           </div>
 
-          <!-- Body -->
-          <div style="padding: 24px;">
-            <div style="margin-bottom: 24px; background-color: #f8fafc; border-left: 4px solid #2563eb; padding: 12px 16px;">
-              <h2 style="margin: 0 0 6px 0; font-size: 18px; color: #0f172a;">
-                ${escapeHtml(issue.headline)}
-              </h2>
-              <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.5;">
-                ${escapeHtml(issue.summary)}
-              </p>
-            </div>
-
-            <!-- Stories -->
-            <div style="margin-bottom: 24px;">
-              ${storiesHtml}
-            </div>
-
-            <!-- Next Moves -->
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
-              <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #0f172a; text-transform: uppercase;">
-                Your Next Move
-              </h4>
-              <ul style="margin: 0; padding-left: 18px;">
-                ${nextMovesHtml}
-              </ul>
-            </div>
-
-            <!-- Attachment Note -->
-            <p style="font-size: 13px; color: #6b7280; text-align: center; margin: 20px 0 0 0;">
-              📎 <strong>A formatted newspaper PDF</strong> with clickable source links is attached to this email.
-            </p>
+          <!-- PDF Attachment Notice -->
+          <div style="background-color: #ebe5d5; border: 1.5px dashed #101b33; border-radius: 4px; padding: 14px 18px; margin: 0 0 24px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="width: 30px; font-size: 22px; vertical-align: top;">📎</td>
+                <td style="font-size: 13.5px; color: #101b33; line-height: 1.45;">
+                  <strong>Your 2-page newspaper PDF is attached.</strong><br>
+                  Formatted for comfortable reading with clickable links to all original source articles.
+                </td>
+              </tr>
+            </table>
           </div>
+
+          <p style="font-size: 14px; line-height: 1.5; color: #4a5469; margin: 0 0 6px 0;">
+            Have a great day ahead,<br>
+            <strong style="color: #101b33;">The Zizou Editor</strong>
+          </p>
 
           <!-- Footer -->
-          <div style="background-color: #f9fafb; padding: 16px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af;">
-            Sent daily at 08:00 IST &bull; Zizou for Early-Career Engineers
+          <div style="margin-top: 28px; padding-top: 14px; border-top: 1px solid #c9c1ab; font-size: 11px; color: #4a5469; text-align: center;">
+            Delivered daily at 08:00 IST &bull; Zizou
           </div>
+
         </div>
       </body>
     </html>
