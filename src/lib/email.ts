@@ -52,7 +52,12 @@ export async function sendIssueEmail(params: {
     return { success: false, error: errorMsg };
   }
 
-  if (!config.emailTo) {
+  const recipients = config.emailTo
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (recipients.length === 0) {
     const errorMsg = 'EMAIL_TO is not configured. Cannot send daily email.';
     console.error(`[Email] ${errorMsg}`);
     return { success: false, error: errorMsg };
@@ -168,7 +173,7 @@ export async function sendIssueEmail(params: {
     const filename = `zizou-${issue.editionDate}.pdf`;
     const response = await resend.emails.send({
       from: config.emailFrom,
-      to: [config.emailTo],
+      to: recipients,
       subject,
       html,
       attachments: [
@@ -191,7 +196,7 @@ export async function sendIssueEmail(params: {
     }
 
     console.info(
-      `[Email] Successfully delivered issue ${issue.editionDate} to ${config.emailTo}. Message ID: ${response.data?.id}`
+      `[Email] Successfully delivered issue ${issue.editionDate} to ${recipients.join(', ')}. Message ID: ${response.data?.id}`
     );
 
     return {
