@@ -697,6 +697,118 @@ dialog .tip {
   }
 }
 
+/* splash screen */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  overflow: hidden;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  transition: opacity 700ms ease;
+}
+
+.splash-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+}
+
+.splash-logo {
+  width: 128px;
+  height: 128px;
+  animation: splash-in 800ms ease both;
+}
+
+.splash-plane {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  z-index: 2;
+  will-change: transform, opacity;
+  animation: plane-loop 3s 0.6s ease both;
+}
+
+.splash-title {
+  margin: 20px 0 0;
+  font: 600 clamp(3rem, 16vw, 5rem) / 1 var(--serif);
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  animation: splash-in 800ms 200ms ease both;
+}
+
+.splash-credit {
+  margin: 10px 0 0;
+  font: 400 0.85rem var(--mono);
+  color: var(--ink2);
+  letter-spacing: 0.03em;
+  animation: splash-in 800ms 400ms ease both;
+}
+
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* paper plane: full clockwise loop then zoom into camera */
+@keyframes plane-loop {
+  0% {
+    transform: translate(0, -30px) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  /* rise to top-right */
+  10% {
+    transform: translate(30vw, -28vh) scale(1) rotate(20deg);
+  }
+  /* sweep across top to top-left */
+  25% {
+    transform: translate(-8vw, -38vh) scale(1.05) rotate(-15deg);
+  }
+  /* bank down the left side */
+  38% {
+    transform: translate(-32vw, -5vh) scale(1.08) rotate(-25deg);
+  }
+  /* curve across the bottom-left */
+  50% {
+    transform: translate(-25vw, 30vh) scale(1.05) rotate(5deg);
+  }
+  /* glide across bottom to right */
+  62% {
+    transform: translate(12vw, 34vh) scale(1.08) rotate(20deg);
+  }
+  /* rise back up the right side */
+  72% {
+    transform: translate(28vw, 8vh) scale(1.05) rotate(10deg);
+  }
+  /* return to center */
+  80% {
+    transform: translate(0, 0) scale(1.15) rotate(0deg);
+    opacity: 1;
+  }
+  /* zoom into camera — fills the screen */
+  100% {
+    transform: translate(0, 0) scale(40) rotate(0deg);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

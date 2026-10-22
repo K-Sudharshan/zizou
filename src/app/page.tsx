@@ -8,6 +8,9 @@ import { formatDisplayDate } from '@/lib/config';
 
 type ViewMode = 'loaded' | 'loading' | 'error' | 'empty' | 'config';
 
+const SPLASH_DURATION = 3000;
+const SPLASH_FADE = 700;
+
 export default function ZizouApp() {
   const [issue, setIssue] = useState<Issue>(SAMPLE_ISSUE);
   const [view, setView] = useState<'home' | 'read'>('home');
@@ -15,6 +18,15 @@ export default function ZizouApp() {
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [showInstall, setShowInstall] = useState<boolean>(false);
   const [cachedDate, setCachedDate] = useState<string>('');
+  const [splashVisible, setSplashVisible] = useState<boolean>(true);
+  const [splashFading, setSplashFading] = useState<boolean>(false);
+
+  // Splash screen timer
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setSplashFading(true), SPLASH_DURATION);
+    const hideTimer = setTimeout(() => setSplashVisible(false), SPLASH_DURATION + SPLASH_FADE);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, []);
 
   // Synchronize hash routing (#/ and #/read) and offline status
   useEffect(() => {
@@ -260,6 +272,31 @@ export default function ZizouApp() {
   };
 
   return (
+    <>
+    {/* Splash Screen */}
+    {splashVisible && (
+      <div className={`splash${splashFading ? ' splash-out' : ''}`} aria-hidden="true">
+        <div className="splash-inner">
+          <svg className="splash-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+            <rect width="512" height="512" fill="none"/>
+            <path d="M154 245c0-73 42-116 102-116s102 43 102 116v80H154Z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="9"/>
+            <path d="M176 210c15-43 41-69 80-73 39 4 65 30 80 73" fill="none" stroke="var(--ink)" strokeWidth="8" strokeLinecap="round"/>
+            <ellipse cx="222" cy="244" rx="6" ry="9" fill="var(--ink)"/><ellipse cx="290" cy="244" rx="6" ry="9" fill="var(--ink)"/>
+            <path d="M240 266c5 7 10 9 16 9s11-2 16-9" fill="none" stroke="var(--ink)" strokeWidth="5" strokeLinecap="round"/>
+            <path d="M86 327c60-22 117-16 170 15v101c-53-31-110-38-170-19Z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="9" strokeLinejoin="round"/>
+            <path d="M256 342c54-31 112-37 170-15v97c-58-19-116-12-170 19Z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="9" strokeLinejoin="round"/>
+            <path d="M256 342v101" stroke="var(--ink)" strokeWidth="7"/>
+            <path d="M107 350h121m-121 14h94m-94 14h105m65-28h123m-123 14h94m-94 14h105" fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round"/>
+          </svg>
+          <h1 className="splash-title">Zizou</h1>
+          <p className="splash-credit">By Sudharshan</p>
+        </div>
+        <svg className="splash-plane" viewBox="260 70 230 260" aria-hidden="true">
+          <path d="M426 312 469 91 278 190l93 22 55 100Z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="9" strokeLinejoin="round"/>
+          <path d="m371 212 98-121-43 221m-55-100-70-22" fill="none" stroke="var(--ink)" strokeWidth="6" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    )}
     <div className="wrap" id="shell">
       {/* Masthead */}
       <header className="mast">
@@ -577,5 +614,6 @@ export default function ZizouApp() {
         </dialog>
       )}
     </div>
+    </>
   );
 }
