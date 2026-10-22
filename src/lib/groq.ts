@@ -92,7 +92,8 @@ CRITICAL RULES:
 1. Select 5 to 7 high-impact stories.
 2. "sourceUrl" MUST be copied exactly from the candidate story's URL. NEVER fabricate URLs or output feed endpoints ending in .xml or /rss.
 3. Total reading time ~5 minutes (approx 550 to 700 words).
-4. Provide 1 to 3 "nextMoves" and 2 to 4 "glossary" terms.`;
+4. Provide 1 to 3 "nextMoves" and 2 to 4 "glossary" terms.
+5. All fields ("editionDate", "headline", "summary", "readingTimeMinutes", "stories", "nextMoves", "glossary") are required. Do not omit any field.`;
 
   const userPrompt = `Below are the verified candidate stories fetched from real feeds:
 =========================================
@@ -106,7 +107,6 @@ Write today's complete edition as a JSON object adhering strictly to the require
   if (!modelsToTry.includes('qwen/qwen3.8-27b')) modelsToTry.push('qwen/qwen3.8-27b');
   if (!modelsToTry.includes('openai/gpt-oss-20b')) modelsToTry.push('openai/gpt-oss-20b');
 
-  let content: string | undefined;
   let lastError: unknown;
 
   for (const model of modelsToTry) {
@@ -124,6 +124,7 @@ Write today's complete edition as a JSON object adhering strictly to the require
             { role: 'user', content: userPrompt },
           ],
           response_format: { type: 'json_object' },
+          max_tokens: 3500,
           temperature: 0.2,
         }),
       });
@@ -134,55 +135,47 @@ Write today's complete edition as a JSON object adhering strictly to the require
       }
 
       const data = await response.json();
-      content = data.choices?.[0]?.message?.content;
-      if (content) break;
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error('Empty response from model');
+      }
+
+      const parsedRaw = JSON.parse(content);
+      const zodResult = IssueSchema.safeParse(parsedRaw);
+      if (!zodResult.success) {
+        throw new Error(
+          `Schema validation failed: ${zodResult.error.message}`
+        );
+      }
+
+      const rawIssue = {
+        ...zodResult.data,
+        editionDate,
+      };
+
+      const { validatedIssue, invalidUrls } = validateAndReconcileStoryUrls(
+        rawIssue,
+        candidateUrls
+      );
+
+      if (invalidUrls.length > 0) {
+        console.warn(`[Groq] Filtered ${invalidUrls.length} untracked URLs:`, invalidUrls);
+      }
+
+      if (validatedIssue.stories.length < 4) {
+        throw new Error(
+          `After URL verification, only ${validatedIssue.stories.length} stories had valid source links (minimum 4 required).`
+        );
+      }
+
+      return validatedIssue;
     } catch (err) {
       lastError = err;
       console.warn(`[Groq] Model ${model} failed: ${err instanceof Error ? err.message : err}. Trying fallback...`);
     }
   }
 
-  if (!content) {
-    throw new Error(
-      `Groq API generation failed across models: ${lastError instanceof Error ? lastError.message : 'Empty response'}`
-    );
-  }
-
-  let parsedRaw: unknown;
-  try {
-    parsedRaw = JSON.parse(content);
-  } catch (err) {
-    throw new Error(
-      `Failed to parse Groq output as JSON: ${err instanceof Error ? err.message : 'Unknown error'}`
-    );
-  }
-
-  const zodResult = IssueSchema.safeParse(parsedRaw);
-  if (!zodResult.success) {
-    throw new Error(
-      `Groq output failed schema validation: ${zodResult.error.message}`
-    );
-  }
-
-  const rawIssue = {
-    ...zodResult.data,
-    editionDate,
-  };
-
-  const { validatedIssue, invalidUrls } = validateAndReconcileStoryUrls(
-    rawIssue,
-    candidateUrls
+  throw new Error(
+    `Groq API generation failed across models: ${lastError instanceof Error ? lastError.message : 'Empty response'}`
   );
-
-  if (invalidUrls.length > 0) {
-    console.warn(`[Groq] Filtered ${invalidUrls.length} untracked URLs:`, invalidUrls);
-  }
-
-  if (validatedIssue.stories.length < 4) {
-    throw new Error(
-      `After URL verification, only ${validatedIssue.stories.length} stories had valid source links (minimum 4 required).`
-    );
-  }
-
-  return validatedIssue;
 }

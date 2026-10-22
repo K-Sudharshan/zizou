@@ -75,10 +75,24 @@ export async function buildDailyIssue(options?: {
   // 2. Select and write the daily issue (Groq prioritized if set, otherwise Gemini)
   let issue: Issue;
   if (config.groqApiKey) {
-    console.info('[Orchestrator] Generating daily issue via Groq API...');
-    issue = await generateDailyIssueWithGroq(feedResult.items, {
-      editionDate: todayEditionDate,
-    });
+    try {
+      console.info('[Orchestrator] Generating daily issue via Groq API...');
+      issue = await generateDailyIssueWithGroq(feedResult.items, {
+        editionDate: todayEditionDate,
+      });
+    } catch (groqErr) {
+      if (config.geminiApiKey) {
+        console.warn(
+          '[Orchestrator] Groq generation failed. Falling back to Gemini API...',
+          groqErr
+        );
+        issue = await generateDailyIssue(feedResult.items, {
+          editionDate: todayEditionDate,
+        });
+      } else {
+        throw groqErr;
+      }
+    }
   } else {
     console.info('[Orchestrator] Generating daily issue via Gemini API...');
     issue = await generateDailyIssue(feedResult.items, {
